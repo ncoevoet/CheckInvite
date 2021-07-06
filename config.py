@@ -52,4 +52,7 @@ CheckInvite = conf.registerPlugin('CheckInvite')
 conf.registerGlobalValue(CheckInvite, 'logChannel',
     registry.String("", _("""log channel joined""")))
 
+conf.registerGlobalValue(CheckInvite, 'ignores',
+    registry.CommaSeparatedListOfStrings([''], """list of channels to ignore on invite, comma separated"""))
+
 # vim:set shiftwidth=4 tabstop=4 expandtab textwidth=79:

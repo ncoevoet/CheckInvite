@@ -28,7 +28,7 @@
 
 ###
 
-from supybot import utils, plugins, ircutils, callbacks, ircmsgs
+from supybot import utils, plugins, ircutils, callbacks, ircmsgs, conf, ircdb
 from supybot.commands import *
 try:
     from supybot.i18n import PluginInternationalization
@@ -46,8 +46,10 @@ class CheckInvite(callbacks.Plugin):
 
     def doInvite(self, irc, msg):
         channel = msg.args[1]
+        if msg.nick == 'ChanServ':
+            return
         self.log.info('%s invited me in %s' % (msg.prefix,channel))
-        if not channel in invites:
+        if not channel in invites and not channel in self.registryValue('ignores'):
             invites[channel] = msg.nick
             irc.queueMsg(ircmsgs.IrcMsg('CS STATUS %s' % channel))
 
@@ -62,17 +64,19 @@ class CheckInvite(callbacks.Plugin):
                channel = text.split(ACCESS)[1].split(' ')[2].strip().split('.')[0]
                if 'o' in flag and channel in invites:
                    irc.queueMsg(ircmsgs.IrcMsg('JOIN %s' % channel))
-                   irc.queueMsg(ircmsgs.notice(invites[channel],"Channel joined. Operators rights on %s are granted once i see new ban/quiet added or removed by a identified user to services" % channel))
-                   irc.queueMsg(ircmsgs.notice(invites[channel],"Available commands are: list chantracker, help <command name>, documentation: https://github.com/ncoevoet/ChanTracker#commands"))
-                   irc.queueMsg(ircmsgs.notice(invites[channel],"Do you have a -ops channel or a channel where the bot should announces new bans/quiets ? contact staffers in #libera-bots"))
-                   irc.queueMsg(ircmsgs.notice(invites[channel],"Do you want new bans/quiets to be removed after a given period if no duration is given by the channel operator ? contact staffers in #libera-bots"))
                    try:
                        network = conf.supybot.networks.get(irc.network)
                        network.channels().add(channel)
                    except KeyError:
                        pass
+                   irc.queueMsg(ircmsgs.notice(invites[channel],"Channel joined. Important: operator rights for %s are granted when i see someone identified to services adding or removing a ban or quiet, so please do that first!" % channel))
+                   irc.queueMsg(ircmsgs.notice(invites[channel],"Available commands are: list chantracker, help <command name>, documentation: https://github.com/ncoevoet/ChanTracker#commands"))
+                   irc.queueMsg(ircmsgs.notice(invites[channel],"Do you want new bans/quiets to be removed after a given period if no duration is given by the channel operator ? /msg %s help cautoexpire" % irc.nick))
+                   irc.queueMsg(ircmsgs.notice(invites[channel],"Do you have a -ops channel or a channel where the bot should announces new bans/quiets ? contact staffers in #libera-bots"))
+                   irc.queueMsg(ircmsgs.notice(invites[channel],"If you have a -ops channel would you like the bot to reply when addressed by nick or ! ? contact staffers in #libera-bots"))
+                   irc.queueMsg(ircmsgs.notice(invites[channel],"i offers various channel protections against floods, repetitions, hilights, join/part flood, etc ... (https://github.com/ncoevoet/ChanTracker#channel-protection) and /msg %s help cflood or chl etc ..." % irc.nick))
                    if self.registryValue('logChannel') in irc.state.channels:
-                       irc.queueMsg(ircmsgs.privmsg(self.registryValue('logChannel'),"[%s] joined due to %s's invitation" % (channel, msg.nick)))
+                       irc.queueMsg(ircmsgs.privmsg(self.registryValue('logChannel'),"[%s] joined due to %s's invitation" % (channel, invites[channel])))
                    del invites[channel]
             elif text.endswith(' is not registered.'):
                channel = text.split(' ')[0].strip()
