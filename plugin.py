@@ -49,15 +49,23 @@ class CheckInvite(callbacks.Plugin):
         if msg.nick == 'ChanServ':
             return
         self.log.info('%s invited me in %s' % (msg.prefix,channel))
-        if not channel in invites and not channel in self.registryValue('ignores'):
+        if not channel in self.registryValue('ignores'):
             invites[channel] = msg.nick
-            irc.queueMsg(ircmsgs.IrcMsg('CS STATUS %s' % channel))
+            irc.queueMsg(ircmsgs.IrcMsg('LIST %s' % channel))
+
+    def do322 (self,irc,msg):
+        if msg.args[1] in i.invites:
+           if int(msg.args[2]) < 10:
+               irc.queueMsg(ircmsgs.notice(invites[msg.args[1]],"Invite denied: the channel must be public and with at least 10 users"))
+               del invites[msg.args[1]]
+           else:
+               irc.queueMsg(ircmsgs.IrcMsg('PRIVMSG ChanServ :STATUS %s' % msg.args[1]))
 
     def doNotice(self, irc, msg):
         (targets, text) = msg.args
         text = ircutils.stripBold(text)
         if msg.nick == 'ChanServ' and targets == irc.nick:
-#            self.log.info('CheckInvite --> %s' % text)
+            self.log.info('CheckInvite --> %s' % text)
             ACCESS = 'You have access flags '
             if text.startswith(ACCESS):
                flag = text.split(ACCESS)[1].split(' ')[0]
