@@ -54,12 +54,10 @@ class CheckInvite(callbacks.Plugin):
             irc.queueMsg(ircmsgs.IrcMsg('LIST %s' % channel))
 
     def do322 (self,irc,msg):
-        if msg.args[1] in i.invites:
-           if int(msg.args[2]) < 10:
-               irc.queueMsg(ircmsgs.notice(invites[msg.args[1]],"Invite denied: the channel must be public and with at least 10 users"))
-               del invites[msg.args[1]]
-           else:
-               irc.queueMsg(ircmsgs.IrcMsg('PRIVMSG ChanServ :STATUS %s' % msg.args[1]))
+        if int(msg.args[2]) < 10:
+            irc.queueMsg(ircmsgs.notice(invites[msg.args[1]],"Invite denied: the channel must be public and with at least 10 users"))
+        else:
+            irc.queueMsg(ircmsgs.IrcMsg('PRIVMSG ChanServ :STATUS %s' % msg.args[1]))
 
     def doNotice(self, irc, msg):
         (targets, text) = msg.args
